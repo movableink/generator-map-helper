@@ -1,7 +1,7 @@
 {
   "name": "generator-map-helper",
-  "version": "0.0.0",
-  "description": "Yeoman generator",
+  "version": "0.1.0",
+  "description": "Quickly create Movable Ink Local Map Helper apps",
   "license": "MIT",
   "main": "app/index.js",
   "repository": "mnutt/generator-map-helper",
