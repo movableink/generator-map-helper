@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <title><%= name %> Map Helper</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <!-- ################# -->
+    <!-- MAP KEY GOES HERE -->
+    <!-- ################# -->
+
+    <meta name="map-key" content="<%= mapKey %>" />
+
+    <!-- ####################### -->
+    <!-- DEFAULT IMAGE GOES HERE -->
+    <!-- ####################### -->
+
+    <% if(defaultImage) { %>
+    <meta name="default-image" content="<%= defaultImage %>" />
+    <% } else { %>
+    <!-- <meta name="default-image" content="http://example.com/default.png" /> -->
+    <% } %>
+
+    <% if(maxResults) { %>
+    <!-- ####################### -->
+    <!-- NUMBER OF RESULTS HERE -->
+    <!-- ####################### -->
+
+    <meta name="max-results" content="<%= maxResults %>" />
+    <% } %>
+
+    <!-- ################# -->
+    <!-- STYLING GOES HERE -->
+    <!-- ################# -->
+
+    <style>
+
+      body {
+        font-family: "Helvetica";
+        margin: 0;
+        padding: 0;
+      }
+
+      #mi_size_container {
+        width: 300px;
+        height: 100px;
+      }
+
+    </style>
+  </head>
+
+  <body>
+    <div id="mi_size_container">
+      <div id="store-location"></div>
+    </div>
+
+<script src="bower_components/jquery/dist/jquery.js"></script>
+<script src="bower_components/cropduster/lib/cropduster.js"></script>
+
+<!-- ############### -->
+<!-- ADVANCED SCRIPT -->
+<!-- ############### -->
+
+    <script>
+      // These are some values derived from parameters passed in
+      var lat = CD.param('mi_lat');
+      var lon = CD.param('mi_lon');
+      /*
+        "num" is the result that we want to display.  It defaults to "1" (the first result).
+        This default can be overwritten by passing in a "mi_num" paramteter
+        For example: ?mi_num=2 will show the second result.
+                     ?mi_num=3 will show the third
+      */
+      var num = 1;
+      if (CD.param("mi_num")) {
+        num = CD.param("mi_num");
+      }
+
+      // Key is pulled from the meta tag at the top of the page
+      var mapKey = CD.$('meta[name=map-key]')[0].getAttribute('content');
+
+      fetchAndRender();
+
+      // When there is a location, build the page like this:
+      function renderDynamic(data) {
+        <% if(maxResults) { %>
+        var resultsCount = CD.$("meta[name=max-results]")[0].getAttribute("max-results");
+        var places = data.slice(0, resultsCount);
+
+        var storeLocations = document.querySelector("#store-location");
+
+        for(var i = 0; i < places.count; i++) {
+          var place = places[i];
+
+          if(i == 0) {
+            // Link of first store goes into dynamic link
+            CD.setClickthrough(place.place_url);
+            CD.setExtraData({closestPlace: place.name});
+          }
+
+          // This is the point at which you can manipulate data stored in the
+          // `name` field. For instance, if the field is stored as
+          // name|open_hour|close_hour:
+          //
+          //   var parts = place.name.split('|');
+          //   var name = parts[0], openHour = parts[1], closeHour = parts[2];
+
+          var el = document.createElement("div");
+          el.innerHTML = place.name;
+          storeLocations.appendChild(el);
+        }
+        <% } else { %>
+        // retrieve the position in the list of nearest places
+        var place = data[num - 1];
+
+        // This is the point at which you can manipulate data stored in the
+        // `name` field. For instance, if the field is stored as
+        // name|open_hour|close_hour:
+        //
+        //   var parts = place.name.split('|');
+        //   var name = parts[0], openHour = parts[1], closeHour = parts[2];
+
+        // variables used to access HTML above
+        var storeLocation = document.querySelector("#store-location");
+
+        // Name of store goes into storeLocation
+        storeLocation.innerHTML = place.name;
+
+        // Store user's closest place in `extra_data` section of user-level report
+        if(num == 1) {
+          CD.setExtraData({closestPlace: place.name});
+        }
+
+        if(place.place_url) {
+          // Link of store goes into dynamic link
+          CD.setClickthrough(place.place_url);
+        }
+        <% } %>
+      }
+
+      // When there is no location, set to default image or a 1x1 px
+      function renderStatic() {
+        // Pulled from configuration at the top
+        var defaultImage = CD.$("meta[name=default-image]")[0];
+
+        if(defaultImage) {
+          var defaultImageUrl = defaultImage.getAttribute('content');
+          CD.setImageRedirect(defaultImageUrl);
+        } else {
+          var container = document.getElementById('mi_size_container');
+          container.style.width = '1px';
+          container.style.height = '1px';
+        }
+      }
+
+      function fetchAndRender() {
+        // Fetch locations from local map
+        var url = "http://www.ink1001.com/p/gp/" + mapKey + "/places?mi_lat=" + lat + "&mi_lon=" + lon;
+
+        CD.getCORS(url, function(response) {
+          var data = JSON.parse(response);
+
+          // If there's no data or if there's an error, render static, otherwise render dynamic
+          if (data.error || data.length < num) {
+            renderStatic();
+          } else {
+            renderDynamic(data);
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
